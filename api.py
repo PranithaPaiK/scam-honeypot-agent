@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import List
 from dotenv import load_dotenv
 from google import genai
+from honeypot_core import get_honeypot_reply
 
 # 1. Initialize App and Environment
 load_dotenv()
