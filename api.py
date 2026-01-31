@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 load_dotenv() 
 app = FastAPI()
 
+@app.get("/")
+async def root():
+    return {"status": "success", "message": "Honeypot Agent is Live"}
+
 # 2. Import your logic from other files
 from extractor import extract_all_intelligence
 from honeypot_core import get_honeypot_reply
