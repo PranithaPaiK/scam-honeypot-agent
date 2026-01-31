@@ -27,7 +27,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Use the precise model name to avoid 404 errors
 # 'gemini-1.5-flash' is the standard stable ID
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 # 3. Import logic (Ensure these files are in your main directory)
 from extractor import extract_all_intelligence
