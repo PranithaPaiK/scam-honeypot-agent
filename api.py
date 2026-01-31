@@ -14,6 +14,8 @@ app = FastAPI()
 
 # --- NEW: Setup for HTML and Static Files ---
 # Ensure you have folders named 'templates' and 'static' in your project directory
+from fastapi.staticfiles import StaticFiles
+# ...
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
