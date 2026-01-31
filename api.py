@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 # 1. Initialize App and Environment
 load_dotenv()
