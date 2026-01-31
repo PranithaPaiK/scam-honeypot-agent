@@ -7,37 +7,46 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
 from dotenv import load_dotenv
+import google.generativeai as genai
 
-# 1. Load the .env file and initialize FastAPI
-load_dotenv() 
+# 1. Initialize App and Environment
+load_dotenv()
 app = FastAPI()
 
-# --- NEW: Setup for HTML and Static Files ---
-# Ensure you have folders named 'templates' and 'static' in your project directory
-from fastapi.staticfiles import StaticFiles
-# ...
+# FIX: Ensure static folder exists for Render deployment
+if not os.path.exists("static"):
+    os.makedirs("static")
+
+# Mount Static and Template files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# 2. Import your logic from other files
-from extractor import extract_all_intelligence
-from honeypot_core import get_honeypot_reply
+# 2. AI Model Setup (FIXES 404 Gemini Error)
+# Ensure your GEMINI_API_KEY is in your .env or Render Env Vars
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# 3. Define the Request Models
+# Use the precise model name to avoid 404 errors
+# 'gemini-1.5-flash' is the standard stable ID
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# 3. Import logic (Ensure these files are in your main directory)
+from extractor import extract_all_intelligence
+# If you use get_honeypot_reply from another file, ensure it's imported correctly
+from honeypot_core import get_honeypot_reply 
+
+# 4. Request Models
 class Message(BaseModel):
     sender: str
     text: str
-    # timestamp: str # Removed to match standard hackathon JSON unless strictly needed
 
 class ScamRequest(BaseModel):
     sessionId: str
     message: Message
     conversationHistory: List[Message]
 
-# 4. The Mandatory Callback Function
+# 5. Callback Logic
 def trigger_final_callback(sid, intel, count):
     url = "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
-    
     payload = {
         "sessionId": sid,
         "scamDetected": True,
@@ -49,9 +58,8 @@ def trigger_final_callback(sid, intel, count):
             "phoneNumbers": intel.get("phoneNumbers", []),
             "suspiciousKeywords": intel.get("suspiciousKeywords", [])
         },
-        "agentNotes": "Scammer successfully engaged. Intelligence reported."
+        "agentNotes": "Mr. Sharma successfully wasted scammer's time."
     }
-    
     headers = {"x-api-key": os.getenv("TEAM_API_KEY")}
     try:
         response = requests.post(url, json=payload, headers=headers)
@@ -59,38 +67,38 @@ def trigger_final_callback(sid, intel, count):
     except Exception as e:
         print(f"Callback Failed: {e}")
 
-# 5. ROUTES
-
-# --- NEW: Route to serve your HTML page ---
+# 6. ROUTES
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
-    # This renders the 'index.html' file inside your 'templates' folder
     return templates.TemplateResponse("index.html", {"request": request})
 
-# The Main API Endpoint for AI Logic
 @app.post("/api/scam-honeypot")
 async def handle_scam(request: ScamRequest, background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
-    # Security check
-    if x_api_key != os.getenv("TEAM_API_KEY"):
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid Team API Key")
+    # 1. Security Check
+    expected_key = os.getenv("TEAM_API_KEY")
+    if x_api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
     try:
-        # AI reply
+        # 2. Get Dynamic AI Reply (Real-time interaction)
+        # Ensure your honeypot_core.py is passing the prompt correctly to the model
         ai_reply = get_honeypot_reply(
             request.message.text,
             request.conversationHistory
         )
 
-        # Extract intelligence
+        # 3. Intelligence Extraction
         intel = extract_all_intelligence(request.message.text)
         history_count = len(request.conversationHistory)
 
-        # Trigger callback in background if intel found or chat is long
+        # 4. Background Callback
         if any(intel.values()) or history_count >= 5:
             background_tasks.add_task(trigger_final_callback, request.sessionId, intel, history_count)
 
+        # 5. Return JSON to Frontend
+        # 'reply' is the key your JS script.js is looking for to avoid 'undefined'
         return {"status": "success", "reply": ai_reply}
 
     except Exception as e:
-        print("ERROR:", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Runtime Error: {e}")
+        raise HTTPException(status_code=500, detail="Mr. Sharma is having trouble thinking.")
