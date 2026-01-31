@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mr. Sharma AI Honeypot</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="chat-container">
+        <h2>Chat with "Mr. Sharma"</h2>
+        <div id="messages"></div>
+        <input type="text" id="user-input" placeholder="Type scam message here...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const msgDiv = document.getElementById('messages');
+            
+            // Add user message to UI
+            msgDiv.innerHTML += `<p><b>Scammer:</b> ${input.value}</p>`;
+            
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: input.value})
+            });
+            const data = await response.json();
+            
+            // Add AI response to UI
+            msgDiv.innerHTML += `<p style="color: blue;"><b>Mr. Sharma:</b> ${data.reply}</p>`;
+            if(data.detected_info.upi_ids.length > 0) {
+                alert("CAUGHT UPI ID: " + data.detected_info.upi_ids[0]);
+            }
+            input.value = '';
+        }
+    </script>
+</body>
+</html>

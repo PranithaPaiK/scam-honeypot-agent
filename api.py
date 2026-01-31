@@ -1,17 +1,21 @@
 import os
 import requests
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request, BackgroundTasks
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from dotenv import load_dotenv
 
 # 1. Load the .env file and initialize FastAPI
 load_dotenv() 
 app = FastAPI()
 
-@app.get("/")
-async def root():
-    return {"status": "success", "message": "Honeypot Agent is Live"}
+# --- NEW: Setup for HTML and Static Files ---
+# Ensure you have folders named 'templates' and 'static' in your project directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 # 2. Import your logic from other files
 from extractor import extract_all_intelligence
@@ -21,7 +25,7 @@ from honeypot_core import get_honeypot_reply
 class Message(BaseModel):
     sender: str
     text: str
-    timestamp: str
+    # timestamp: str # Removed to match standard hackathon JSON unless strictly needed
 
 class ScamRequest(BaseModel):
     sessionId: str
@@ -32,7 +36,6 @@ class ScamRequest(BaseModel):
 def trigger_final_callback(sid, intel, count):
     url = "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
     
-    # Ensuring the payload matches the judge's requirements
     payload = {
         "sessionId": sid,
         "scamDetected": True,
@@ -47,7 +50,6 @@ def trigger_final_callback(sid, intel, count):
         "agentNotes": "Scammer successfully engaged. Intelligence reported."
     }
     
-    # Headers must include your Team API Key
     headers = {"x-api-key": os.getenv("TEAM_API_KEY")}
     try:
         response = requests.post(url, json=payload, headers=headers)
@@ -55,9 +57,17 @@ def trigger_final_callback(sid, intel, count):
     except Exception as e:
         print(f"Callback Failed: {e}")
 
-# 5. The Main API Endpoint
+# 5. ROUTES
+
+# --- NEW: Route to serve your HTML page ---
+@app.get("/", response_class=HTMLResponse)
+async def serve_home(request: Request):
+    # This renders the 'index.html' file inside your 'templates' folder
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# The Main API Endpoint for AI Logic
 @app.post("/api/scam-honeypot")
-async def handle_scam(request: ScamRequest, x_api_key: str = Header(None)):
+async def handle_scam(request: ScamRequest, background_tasks: BackgroundTasks, x_api_key: str = Header(None)):
     # Security check
     if x_api_key != os.getenv("TEAM_API_KEY"):
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid Team API Key")
@@ -71,11 +81,11 @@ async def handle_scam(request: ScamRequest, x_api_key: str = Header(None)):
 
         # Extract intelligence
         intel = extract_all_intelligence(request.message.text)
-
         history_count = len(request.conversationHistory)
 
+        # Trigger callback in background if intel found or chat is long
         if any(intel.values()) or history_count >= 5:
-            trigger_final_callback(request.sessionId, intel, history_count)
+            background_tasks.add_task(trigger_final_callback, request.sessionId, intel, history_count)
 
         return {"status": "success", "reply": ai_reply}
 
