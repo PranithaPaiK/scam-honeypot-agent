@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+import google.genai as genai
 from dotenv import load_dotenv
 
 load_dotenv() # Reads your .env file
@@ -25,9 +25,14 @@ def get_honeypot_reply(current_text, history):
         f"Mr. Sharma's Reply:"
     )
 
-    try:
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
+    
+    except Exception as e:# To this (ensure 'client' is initialized with your API key):
+try:
+    response = client.models.generate_content(
+        model="gemini-1.5-flash", 
+        contents=prompt
+    )
+    return response.text.strip()
+    except exception as e:
         print("Gemini Error:", e)
         return "Beta, I am confused. Can you explain again?"
