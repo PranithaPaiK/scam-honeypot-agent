@@ -1,38 +1,45 @@
 import os
-import google.genai as genai
+from google import genai
 from dotenv import load_dotenv
 
-load_dotenv() # Reads your .env file
+# Load environment variables from .env file
+load_dotenv()
 
-# Configure Gemini using your key from .env
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Initialize the new Google GenAI Client
+# It will automatically look for GEMINI_API_KEY in your environment
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def get_honeypot_reply(current_text, history):
-    persona = (
-        "You are an elderly person named Mr. Sharma. You are helpful but slow with tech. "
-        "A stranger is messaging you. You must keep them talking to waste their time. "
-        "Ask for help or links if they try to scam you. Never say you are an AI."
-    )
-
-    # history is a List[Message], not dicts
-    chat_log = "\n".join([f"{m.sender}: {m.text}" for m in history])
-
-    prompt = (
-        f"{persona}\n\n"
-        f"Recent History:\n{chat_log}\n"
-        f"Scammer: {current_text}\n"
-        f"Mr. Sharma's Reply:"
-    )
-
+def get_honeypot_reply(user_input, history):
+    """
+    Generates a response from Mr. Sharma using the new google-genai SDK.
+    """
     
-    except Exception as e:# To this (ensure 'client' is initialized with your API key):
-try:
-    response = client.models.generate_content(
-        model="gemini-1.5-flash", 
-        contents=prompt
+    # 1. Define Mr. Sharma's persona (The System Instruction)
+    system_instruction = (
+        "You are Mr. Sharma, a 65-year-old retired bank clerk from India. "
+        "You are extremely polite, talkative, and very slow to understand technology. "
+        "You love talking about your pension, your blood pressure, and your grandson "
+        "who lives in Canada. Your goal is to waste the scammer's time by being "
+        "easily distracted and asking for help with simple things like 'finding the internet button'."
     )
-    return response.text.strip()
-    except exception as e:
-        print("Gemini Error:", e)
-        return "Beta, I am confused. Can you explain again?"
+    
+    # 2. Format the conversation history for the AI
+    # This helps the AI remember what was said previously
+    context = "\n".join([f"{msg.sender}: {msg.text}" for msg in history])
+    full_prompt = f"{system_instruction}\n\nChat History:\n{context}\nScammer: {user_input}\nMr. Sharma:"
+
+    try:
+        # 3. Call the Gemini API using the new syntax
+        # We use 'gemini-1.5-flash' for speed and cost-efficiency
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=full_prompt
+        )
+        
+        # Return the AI's response text
+        return response.text.strip()
+
+    except Exception as e:
+        # Fallback: If the API fails, Mr. Sharma stays in character
+        print(f"Error calling Gemini API: {e}")
+        return "Beta, please wait... I think my computer has a virus. Is the green light supposed to blink like that?"
