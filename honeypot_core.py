@@ -28,7 +28,11 @@ def get_honeypot_reply(user_input, history):
 
     try:
         response = client.models.generate_content(
+<<<<<<< HEAD
             model="models/gemini-1.5-flash-latest",
+=======
+            model="gemini-1.5-flash",
+>>>>>>> b524800e839748b7217281d88f6b8862108faeb3
             contents=full_prompt
         )
         return response.text.strip()
