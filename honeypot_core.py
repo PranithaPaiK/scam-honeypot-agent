@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"),
+api_version="v1"
+)
 
 SYSTEM_INSTRUCTION = (
     "You are Mr. Sharma, a cautious elderly Indian man. "
@@ -33,4 +35,3 @@ def get_honeypot_reply(user_input, history):
     except Exception as e:
         print("Gemini error:", e)
         return "Beta, network thoda slow lag raha hai. Thoda rukna."
-        
