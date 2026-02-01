@@ -35,7 +35,3 @@ def get_honeypot_reply(user_input, history):
     except Exception as e:
         print("Gemini error:", e)
         return "Beta, network thoda slow lag raha hai. Thoda rukna."
-<<<<<<< HEAD
-=======
-        
->>>>>>> d0a3efa43cc5ecd3cb8199c7b164f5ef5b607407
