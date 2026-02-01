@@ -1,21 +1,36 @@
 import os
-from google import genai  # Correct new import
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# NEW: Pass API key directly to the Client object
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    context = "\n".join([f"{m.sender}: {m.text}" for m in history])
-    full_prompt = f"{system_instruction}\n\nChat History:\n{context}\nScammer: {user_input}\nMr. Sharma:"
+
+SYSTEM_INSTRUCTION = (
+    "You are Mr. Sharma, a cautious elderly Indian man. "
+    "You respond politely and try to make scammers reveal details."
+)
+
+def get_honeypot_reply(user_input, history):
+    # Build conversation history safely
+    context = "\n".join(
+        [f"{m['sender']}: {m['text']}" for m in history]
+    )
+
+    full_prompt = (
+        f"{SYSTEM_INSTRUCTION}\n\n"
+        f"Chat History:\n{context}\n"
+        f"Scammer: {user_input}\n"
+        f"Mr. Sharma:"
+    )
 
     try:
-        # NEW: The correct way to call the AI with google-genai
         response = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=full_prompt
         )
         return response.text.strip()
     except Exception as e:
-        print(f"Error: {e}")
-        return "Beta, hold on... my internet is acting up."
+        print("Gemini error:", e)
+        return "Beta, network thoda slow lag raha hai. Thoda rukna."
+        

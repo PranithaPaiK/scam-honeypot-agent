@@ -19,7 +19,7 @@ templates = Jinja2Templates(directory="templates")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/chat")
+@app.post("/api/scam-honeypot")
 async def chat(request: Request):
     data = await request.json()
     user_input = data.get("message")
