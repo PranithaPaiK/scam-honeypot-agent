@@ -14,7 +14,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise RuntimeError("OPENAI_API_KEY not set")
 
-honeypot = HoneypotChat(api_key)
+honeypot = HoneypotChat()
 
 @app.route("/", methods=["GET"])
 def home():
