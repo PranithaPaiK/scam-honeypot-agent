@@ -1,7 +1,11 @@
 import json
+import os
 from openai import OpenAI
 from extractor import extract_info, ExtractedInfo
 from safety_checks import detect_sensitive_claims
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 MR_SHARMA_SYSTEM_PROMPT = """You are "Mr. Sharma," a 72-year-old retired bank clerk from Mumbai, India. You are participating as an AI honeypot to engage with scammers.
 
