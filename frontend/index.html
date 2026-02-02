@@ -1,0 +1,205 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MR SHARMA | Secure Chat</title>
+
+    <style>
+        :root {
+            --bg-color: #e5ddd5;
+            --sharma-bubble: #ffffff;
+            --scammer-bubble: #dcf8c6;
+            --header-color: #075e54;
+            --text-color: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* Fullscreen Chat Window */
+        #chat-window {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: var(--header-color);
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: #ccc;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+
+        /* Alert */
+        .alert-box {
+            background: #ff5252;
+            color: white;
+            padding: 6px;
+            font-size: 0.85rem;
+            text-align: center;
+            display: none;
+        }
+
+        /* Messages */
+        #messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: var(--text-color);
+        }
+
+        .scammer {
+            align-self: flex-end;
+            background: var(--scammer-bubble);
+            border-top-right-radius: 0;
+        }
+
+        .sharma {
+            align-self: flex-start;
+            background: var(--sharma-bubble);
+            border-top-left-radius: 0;
+        }
+
+        /* Input Area */
+        .input-area {
+            background: #f0f0f0;
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            outline: none;
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        button {
+            background: var(--header-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #128c7e;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="chat-window">
+
+    <header>
+        <div class="avatar">👴</div>
+        <div>
+            <div style="font-weight: bold;">MR SHARMA</div>
+            <div style="font-size: 0.75rem; opacity: 0.8;">Online</div>
+        </div>
+    </header>
+
+    <div id="extraction-alert" class="alert-box">🚨 DATA INTERCEPTED 🚨</div>
+
+    <div id="messages">
+        <div class="msg sharma">
+            Namaste Beta. How can I help you today? I was just reading my pension papers.
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Type a message..." onkeypress="handleKey(event)">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
+
+<script>
+    function handleKey(e) {
+        if (e.key === "Enter") sendMessage();
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('user-input');
+        const msgDiv = document.getElementById('messages');
+        const alertBox = document.getElementById('extraction-alert');
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        msgDiv.innerHTML += `<div class="msg scammer">${text}</div>`;
+        input.value = '';
+        msgDiv.scrollTop = msgDiv.scrollHeight;
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await response.json();
+
+            msgDiv.innerHTML += `<div class="msg sharma">${data.reply}</div>`;
+
+            if (data.detected_info.upi_ids.length > 0 || data.detected_info.links.length > 0) {
+                alertBox.style.display = 'block';
+                alertBox.innerText =
+                    "🚨 Detected: " + (data.detected_info.upi_ids[0] || data.detected_info.links[0]);
+
+                setTimeout(() => alertBox.style.display = 'none', 5000);
+            }
+
+            msgDiv.scrollTop = msgDiv.scrollHeight;
+
+        } catch {
+            msgDiv.innerHTML +=
+                `<div class="msg sharma" style="color:red">Beta, my internet is acting up...</div>`;
+        }
+    }
+</script>
+
+</body>
+</html>
